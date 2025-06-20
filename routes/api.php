@@ -13,6 +13,20 @@ Route::get('/events', function () {
     return \App\Models\Events::all();
 })->name('get.events');
 
+Route::get('/events/{id}', function ($id) {
+    $event = Events::find($id);
+
+    if (!$event) {
+        return response()->json([
+            'message' => 'Event not found'
+        ], 404);
+    }
+
+    return response()->json([
+        'event' => $event
+    ]);
+})->name('get.single.event');
+
 Route::post('/events/store', function (Request $request) {
     $token = $request->header('Authorization');
     if (!$token) {
