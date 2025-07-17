@@ -15,7 +15,7 @@ return new class extends Migration
 
         Schema::create('leave_types', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g., Annual, Sick, Maternity
+            $table->string('name');
             $table->text('description')->nullable();
             $table->integer('max_days_per_year');
             $table->boolean('requires_approval')->default(true);
@@ -24,7 +24,7 @@ return new class extends Migration
 
         Schema::create('salary_components', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // e.g., Basic, Bonus, Tax, Pension
+            $table->string('name');
             $table->enum('type', ['earning', 'deduction']);
             $table->boolean('is_taxable')->default(false);
             $table->timestamps();
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->id();
             $table->date('start_date');
             $table->date('end_date');
-            $table->string('payroll_month'); // e.g., "2025-06"
+            $table->string('payroll_month');
             $table->enum('status', ['pending', 'processed', 'paid'])->default('pending');
             $table->timestamps();
         });
@@ -45,7 +45,7 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->unsignedBigInteger('leave_type_id');
-            $table->integer('total_entitled');   // e.g., 20
+            $table->integer('total_entitled');
             $table->integer('used')->default(0);
             $table->integer('remaining')->default(0);
             $table->timestamps();
@@ -62,7 +62,7 @@ return new class extends Migration
             $table->date('end_date');
             $table->integer('total_days');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
-            $table->unsignedBigInteger('approved_by')->nullable(); // Manager or HR ID
+            $table->unsignedBigInteger('approved_by')->nullable();
             $table->text('reason')->nullable();
             $table->text('rejection_reason')->nullable();
             $table->timestamps();
@@ -90,7 +90,7 @@ return new class extends Migration
             $table->decimal('total_earnings', 10, 2);
             $table->decimal('total_deductions', 10, 2);
             $table->decimal('net_pay', 10, 2);
-            $table->text('remarks')->nullable(); // Optional notes
+            $table->text('remarks')->nullable();
             $table->timestamps();
 
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
@@ -112,17 +112,14 @@ return new class extends Migration
             $table->foreign('payroll_id')->references('id')->on('payrolls')->onDelete('cascade');
         });
 
-
-        // Documents table
         Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
-            $table->string('type'); // e.g., contract, ID, certificate
+            $table->string('type');
             $table->string('file_path');
             $table->timestamps();
         });
 
-        // Performance Goals
         Schema::create('performance_goals', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -135,7 +132,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Performance Reviews
         Schema::create('performance_reviews', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -147,7 +143,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Feedback
         Schema::create('feedback', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -157,7 +152,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Promotion Recommendations
         Schema::create('promotion_recommendations', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -168,16 +162,14 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Courses
         Schema::create('courses', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->text('description')->nullable();
-            $table->string('external_link')->nullable(); // For external LMS integration
+            $table->string('external_link')->nullable();
             $table->timestamps();
         });
 
-        // Course Assignments
         Schema::create('course_assignments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -188,7 +180,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        // Certifications
         Schema::create('certifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
@@ -199,8 +190,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
-          // Announcements
-          Schema::create('announcements', function (Blueprint $table) {
+        Schema::create('announcements', function (Blueprint $table) {
             $table->id();
             $table->string('title');
             $table->text('body');
@@ -210,17 +200,16 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
-        // Analytics Logs
+
         Schema::create('analytics_logs', function (Blueprint $table) {
             $table->id();
-            $table->string('report_type'); // e.g., headcount, attrition, compliance
+            $table->string('report_type');
             $table->foreignId('generated_by')->nullable()->constrained('employees')->onDelete('set null');
             $table->json('filters')->nullable();
             $table->timestamp('generated_at');
             $table->timestamps();
         });
 
-        // Reports
         Schema::create('reports', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -230,18 +219,17 @@ return new class extends Migration
             $table->foreignId('created_by')->nullable()->constrained('employees')->onDelete('set null');
             $table->timestamps();
         });
-            // Audit Trails
-            Schema::create('audit_trails', function (Blueprint $table) {
-                $table->id();
-                $table->foreignId('employee_id')->nullable()->constrained('employees')->onDelete('set null');
-                $table->string('action'); // e.g., login, update_profile, delete_record
-                $table->string('target_table')->nullable();
-                $table->string('target_id')->nullable();
-                $table->ipAddress('ip_address')->nullable();
-                $table->text('details')->nullable();
-                $table->timestamps();
-            });
-    
+
+        Schema::create('audit_trails', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->nullable()->constrained('employees')->onDelete('set null');
+            $table->string('action');
+            $table->string('target_table')->nullable();
+            $table->string('target_id')->nullable();
+            $table->ipAddress('ip_address')->nullable();
+            $table->text('details')->nullable();
+            $table->timestamps();
+        });
 
         Schema::create('attendances', function (Blueprint $table) {
             $table->id();
@@ -257,10 +245,27 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('employee_id')->references('id')->on('employees')->onDelete('cascade');
-            // Do NOT add shift_id foreign key here unless `shifts` table exists before
         });
 
-        
+        Schema::create('weekly_attendance_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            $table->integer('week');
+            $table->year('year');
+            $table->integer('total_minutes')->default(0);
+            $table->timestamps();
+            $table->unique(['employee_id', 'week', 'year']);
+        });
+
+        Schema::create('monthly_attendance_logs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
+            $table->integer('month');
+            $table->year('year');
+            $table->integer('total_minutes')->default(0);
+            $table->timestamps();
+            $table->unique(['employee_id', 'month', 'year']);
+        });
     }
 
     /**
@@ -268,6 +273,8 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('monthly_attendance_logs');
+        Schema::dropIfExists('weekly_attendance_logs');
         Schema::dropIfExists('attendances');
         Schema::dropIfExists('tax_statements');
         Schema::dropIfExists('payslips');
