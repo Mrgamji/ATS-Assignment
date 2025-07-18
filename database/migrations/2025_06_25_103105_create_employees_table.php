@@ -28,12 +28,12 @@ return new class extends Migration
             $table->string('designation');
             $table->string('department');
             $table->unsignedBigInteger('manager_id')->nullable(); // Self-referencing foreign key
-            $table->enum('employment_type', ['full-time', 'graduate-trainee', 'intern']);
+            $table->enum('employment_type', ['full-time', 'graduate-trainee', 'intern', 'part-time', 'contract']);
             $table->date('date_of_joining')->nullable();
             $table->string('employee_code')->unique(); // Custom employee identifier
         
             // Other
-            $table->integer('age')->nullable();
+            $table->integer('gender');
             $table->date('date_of_birth')->nullable();
         
             $table->string('role');
