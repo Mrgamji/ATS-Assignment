@@ -48,7 +48,7 @@ Route::post('/employee/store', function (Request $request) {
         'employee_code' => 'required|string|unique:employees,employee_code',
 
         // Other
-        'gender' => 'nullable|string|max:18',
+        'gender' => 'required|string|max:18',
         'date_of_birth' => 'nullable|date',
         'role' => 'required|string|max:100',
     ]);
