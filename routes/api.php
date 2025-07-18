@@ -63,7 +63,7 @@ Route::post('/employee/store', function (Request $request) {
 
 // routes/api.php
 Route::post('/employees', [EmployeeController::class, 'store']);
-
+Route::get('/employees', [EmployeeController::class, 'index']);
 
     // Update an event
     Route::put('/events/{id}', function (Request $request, $id) {
