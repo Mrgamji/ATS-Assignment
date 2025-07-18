@@ -33,7 +33,7 @@ return new class extends Migration
             $table->string('employee_code')->unique(); // Custom employee identifier
         
             // Other
-            $table->integer('gender', ['male', 'female']);
+            $table->string('gender');
             $table->date('date_of_birth')->nullable();
         
             $table->string('role');
