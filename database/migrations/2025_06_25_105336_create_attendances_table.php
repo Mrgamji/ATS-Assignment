@@ -11,7 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Create base/reference tables first
 
         Schema::create('leave_types', function (Blueprint $table) {
             $table->id();
@@ -38,8 +37,6 @@ return new class extends Migration
             $table->enum('status', ['pending', 'processed', 'paid'])->default('pending');
             $table->timestamps();
         });
-
-        // 2. Tables that reference employees, leave_types, salary_components, payrolls
 
         Schema::create('leave_balances', function (Blueprint $table) {
             $table->id();
