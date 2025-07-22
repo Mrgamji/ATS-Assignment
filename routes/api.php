@@ -1,63 +1,84 @@
 <?php
 
-use App\Http\Middleware\ApiMiddleware;
-use App\Models\Employee;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 
-Route::get('/employees', function () {
-    // Example: return all events as JSON
-    return \App\Models\Employee::all();
-})->name('get.employees');
+/**
+ * --------------------------------------------------------------------------
+ * Employee Management API Routes
+ * --------------------------------------------------------------------------
+ * These routes offer CRUD operations for the HRMS modules.
+ * Each route is named, follows RESTful conventions, and uses controllers.
+ */
 
-Route::get('/employees/{id}', function ($id) {
-    $employee= Employee::find($id);
+// Employee CRUD
+Route::apiResource('employees', App\Http\Controllers\EmployeeController::class);
 
-    if (!$employee) {
-        return response()->json([
-            'message' => 'Employee not found'
-        ], 404);
-    }
+// Leave Types
+Route::apiResource('leave-types', App\Http\Controllers\LeaveTypeController::class);
 
-    return response()->json([
-        'employee' => $employee
-    ]);
-})->name('get.single.employee');
+// Leave Balances
+Route::apiResource('leave-balances', App\Http\Controllers\LeaveBalanceController::class);
 
-Route::post('/employee/store', function (Request $request) {
-    $validated = $request->validate([
-        // Personal Details
-        'first_name' => 'required|string|max:255',
-        'last_name' => 'required|string|max:255',
-        'photo' => 'nullable|string', // URL or path
-        'email' => 'required|email|unique:employees,email',
-        'phone' => 'nullable|string|max:20',
-        'address' => 'nullable|string|max:255',
-        'emergency_contact_name' => 'nullable|string|max:255',
-        'emergency_contact_phone' => 'nullable|string|max:20',
+// Leave Requests
+Route::apiResource('leave-requests', App\Http\Controllers\LeaveRequestController::class);
 
-        // Employment Details
-        'designation' => 'required|string|max:255',
-        'department' => 'required|string|max:255',
-        'manager_id' => 'nullable|exists:employees,id',
-        'employment_type' => 'required|in:full-time,graduate-trainee,intern,part-time,contract',
-        'date_of_joining' => 'nullable|date',
-        'employee_code' => 'required|string|unique:employees,employee_code',
+// Salary Components
+Route::apiResource('salary-components', App\Http\Controllers\SalaryComponentController::class);
 
-        // Other
-        'gender' => 'required|string|max:18',
-        'date_of_birth' => 'nullable|date',
-        'role' => 'required|string|max:100',
-    ]);
+// Employee Salaries
+Route::apiResource('employee-salaries', App\Http\Controllers\EmployeeSalaryController::class);
 
-    $employee = Employee::create($validated);
+// Payrolls
+Route::apiResource('payrolls', App\Http\Controllers\PayrollController::class);
 
-    return response()->json([
-        'message' => 'Employee added successfully',
-        'employee' => $employee
-    ], 201);
-})->name('store.employee');
+// Payslips
+Route::apiResource('payslips', App\Http\Controllers\PayslipController::class);
 
+// Tax Statements
+Route::apiResource('tax-statements', App\Http\Controllers\TaxStatementController::class);
+
+// Documents
+Route::apiResource('documents', App\Http\Controllers\DocumentController::class);
+
+// Performance Goals
+Route::apiResource('performance-goals', App\Http\Controllers\PerformanceGoalController::class);
+
+// Performance Reviews
+Route::apiResource('performance-reviews', App\Http\Controllers\PerformanceReviewController::class);
+
+// Feedback
+Route::apiResource('feedback', App\Http\Controllers\FeedbackController::class);
+
+// Promotion Recommendations
+Route::apiResource('promotion-recommendations', App\Http\Controllers\PromotionRecommendationController::class);
+
+// Courses
+Route::apiResource('courses', App\Http\Controllers\CourseController::class);
+
+// Course Assignments
+Route::apiResource('course-assignments', App\Http\Controllers\CourseAssignmentController::class);
+
+// Certifications
+Route::apiResource('certifications', App\Http\Controllers\CertificationController::class);
+
+// Announcements
+Route::apiResource('announcements', App\Http\Controllers\AnnouncementController::class);
+
+// Analytics Logs
+Route::apiResource('analytics-logs', App\Http\Controllers\AnalyticsLogController::class);
+
+// Reports
+Route::apiResource('reports', App\Http\Controllers\ReportController::class);
+
+// Audit Trails
+Route::apiResource('audit-trails', App\Http\Controllers\AuditTrailController::class);
+
+// Attendances
+Route::apiResource('attendances', App\Http\Controllers\AttendanceController::class);
+
+// Weekly Attendance Logs
+Route::apiResource('weekly-attendance-logs', App\Http\Controllers\WeeklyAttendanceLogController::class);
+
+// Monthly Attendance Logs
+Route::apiResource('monthly-attendance-logs', App\Http\Controllers\MonthlyAttendanceLogController::class);
