@@ -235,8 +235,8 @@ return new class extends Migration
             $table->id();
             $table->unsignedBigInteger('employee_id');
             $table->date('attendance_date');
-            $table->dateTime('clock_in')->change();
-            $table->dateTime('clock_out')->change();
+            $table->dateTime('clock_in')->nullable();
+            $table->dateTime('clock_out')->nullable();
             $table->enum('method', ['facial_recognition', 'biometric', 'remote'])->default('facial_recognition');
             $table->unsignedBigInteger('shift_id')->nullable();
             $table->decimal('total_hours', 5, 2)->nullable();
