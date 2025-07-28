@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
@@ -60,14 +61,29 @@ public function login(Request $request)
             return response()->json(['error' => $validator->errors()], 422);
         }
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
+        try {
+            $status = Password::sendResetLink(
+                $request->only('email')
+            );
 
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Reset link sent to your email.']);
-        } else {
-            return response()->json(['error' => 'Unable to send reset link.'], 500);
+            if ($status === Password::RESET_LINK_SENT) {
+                return response()->json(['message' => 'Reset link sent to your email.']);
+            } else {
+                // Log the error status for debugging
+                Log::error('Unable to send reset link.', [
+                    'email' => $request->input('email'),
+                    'status' => $status
+                ]);
+                return response()->json(['error' => 'Unable to send reset link.'], 500);
+            }
+        } catch (\Exception $e) {
+            // Log the exception details
+            Log::error('Exception while sending reset link.', [
+                'email' => $request->input('email'),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'An error occurred while sending reset link.'.$e->getMessage()], 500);
         }
     }
 
