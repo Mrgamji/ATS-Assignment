@@ -19,6 +19,7 @@ Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->m
 Route::get('/password/reset/{token}', function ($token) {
     return view('auth.reset', ['token' => $token]);
 })->name('password.reset');
+
 Route::post('seeduser', function () {
     $user = \App\Models\User::create([
         'name' => 'Sample User 1',
