@@ -11,6 +11,31 @@ use Illuminate\Support\Facades\Route;
  * Each route is named, follows RESTful conventions, and uses controllers.
  */
 
+Route::post('login', [App\Http\Controllers\AuthController::class, 'login'])->name('login');
+Route::post('signup', [App\Http\Controllers\AuthController::class, 'signup'])->name('signup');
+Route::post('forgot-password', [App\Http\Controllers\AuthController::class, 'forgotPassword'])->name('forgot-password');
+Route::post('verify-email', [App\Http\Controllers\AuthController::class, 'verifyEmail'])->name('verify-email');
+Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->middleware('auth:api')->name('logout');
+
+Route::get('/password/reset/{token}', function ($token) {
+    return view('auth.reset', ['token' => $token]);
+})->name('password.reset');
+
+Route::post('seeduser', function () {
+    $user = \App\Models\User::create([
+        'name' => 'Sample User 1',
+        'email' => 'sampleuser1@example.com',
+        'phone' => '1234567890',
+        'password' => bcrypt('password123'),
+    ]);
+    return response()->json($user, 201);
+});
+Route::get('users', function () {
+    return response()->json(\App\Models\User::all());
+})->name('users.index');
+
+
+
 // Employee CRUD
 Route::apiResource('employees', App\Http\Controllers\EmployeeController::class);
 

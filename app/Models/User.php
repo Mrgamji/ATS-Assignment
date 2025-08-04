@@ -7,11 +7,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Tymon\JWTAuth\Contracts\JWTSubject;
+use Illuminate\Auth\Notifications\ResetPassword;
 
 class User extends Authenticatable implements JWTSubject
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+public function sendPasswordResetNotification($token)
+{
+    $url = config('app.frontend_url') . '/reset-password?token=' . $token;
+
+    $this->notify(new ResetPassword($token));
+}
 
     public function getJWTIdentifier()
     {

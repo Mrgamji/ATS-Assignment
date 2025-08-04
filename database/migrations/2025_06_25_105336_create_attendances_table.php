@@ -249,7 +249,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->integer('week');
             $table->year('year');
-            $table->integer('total_minutes')->default(0);
+            $table->integer('total_hours')->default(0);
             $table->timestamps();
             $table->unique(['employee_id', 'week', 'year']);
         });
@@ -259,7 +259,7 @@ return new class extends Migration
             $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->integer('month');
             $table->year('year');
-            $table->integer('total_minutes')->default(0);
+            $table->integer('total_hours')->default(0);
             $table->timestamps();
             $table->unique(['employee_id', 'month', 'year']);
         });
