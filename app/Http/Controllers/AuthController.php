@@ -8,48 +8,82 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
-
-
+use App\Models\User;
 
 class AuthController extends Controller
 {
-  
+    public function signup(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6|confirmed',
+            'phone'    => 'nullable|string|max:20',
+        ]);
 
-public function login(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'email'    => 'required|email',
-        'password' => 'required|string',
-    ]);
-
-    if ($validator->fails()) {
-        return response()->json(['error' => $validator->errors()], 422);
-    }
-
-    try {
-        // Attempt to log in and get the token
-        if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
-            return response()->json(['error' => 'Invalid credentials'], 401);
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
         }
-    } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
-        return response()->json(['error' => 'Token has expired'], 401);
-    } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
-        return response()->json(['error' => 'Token is invalid'], 401);
-    } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
-        return response()->json(['error' => 'Could not create token', 'details' => $e->getMessage()], 500);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'An unexpected error occurred', 'details' => $e->getMessage()], 500);
+
+        try {
+            $user = User::create([
+                'name'     => $request->input('name'),
+                'email'    => $request->input('email'),
+                'phone'    => $request->input('phone'),
+                'password' => bcrypt($request->input('password')),
+            ]);
+
+            $token = JWTAuth::fromUser($user);
+
+            return response()->json([
+                'user'  => $user,
+                'token' => $token,
+                'message' => 'User registered successfully.'
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Signup error', [
+                'email' => $request->input('email'),
+                'exception' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'An error occurred during signup. ' . $e->getMessage()], 500);
+        }
     }
 
-    // Authenticated user
-    $user = JWTAuth::user();
+    public function login(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ]);
 
-    return response()->json([
-        'user'  => $user,
-        'token' => $token,
-    ]);
-}
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
 
+        try {
+            // Attempt to log in and get the token
+            if (!$token = JWTAuth::attempt($request->only('email', 'password'))) {
+                return response()->json(['error' => 'Invalid credentials'], 401);
+            }
+        } catch (\Tymon\JWTAuth\Exceptions\TokenExpiredException $e) {
+            return response()->json(['error' => 'Token has expired'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\TokenInvalidException $e) {
+            return response()->json(['error' => 'Token is invalid'], 401);
+        } catch (\Tymon\JWTAuth\Exceptions\JWTException $e) {
+            return response()->json(['error' => 'Could not create token', 'details' => $e->getMessage()], 500);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'An unexpected error occurred', 'details' => $e->getMessage()], 500);
+        }
+
+        // Authenticated user
+        $user = JWTAuth::user();
+
+        return response()->json([
+            'user'  => $user,
+            'token' => $token,
+        ]);
+    }
 
     public function forgotPassword(Request $request)
     {
@@ -83,7 +117,7 @@ public function login(Request $request)
                 'exception' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            return response()->json(['error' => 'An error occurred while sending reset link.'.$e->getMessage()], 500);
+            return response()->json(['error' => 'An error occurred while sending reset link.' . $e->getMessage()], 500);
         }
     }
 
