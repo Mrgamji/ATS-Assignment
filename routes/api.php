@@ -16,7 +16,7 @@ Route::post('signup', [App\Http\Controllers\AuthController::class, 'signup'])->n
 Route::post('forgot-password', [App\Http\Controllers\AuthController::class, 'forgotPassword'])->name('forgot-password');
 Route::post('verify-email', [App\Http\Controllers\AuthController::class, 'verifyEmail'])->name('verify-email');
 Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->middleware('auth:api')->name('logout');
-
+Route::middleware('auth:api')->post('updateProfile', [App\Http\Controllers\AuthController::class, 'updateProfile'])->name('profile.update');
 Route::get('/password/reset/{token}', function ($token) {
     return view('auth.reset', ['token' => $token]);
 })->name('password.reset');
