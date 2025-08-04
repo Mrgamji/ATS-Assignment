@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 class AuthController extends Controller
 {
@@ -116,6 +118,27 @@ class AuthController extends Controller
             ]);
 
             $token = JWTAuth::fromUser($user);
+            // Generate a 6-digit OTP
+            $otp = rand(100000, 999999);
+
+            // Store OTP in cache for 10 minutes (or you can use DB if preferred)
+            try {
+                 Cache::put('otp_' . $user->email, $otp, now()->addMinutes(10));
+
+                // Send OTP to user's email
+            Mail::send('emails.otp', ['otp' => $otp], function ($message) use ($user) 
+                 {
+                       $message->to($user->email)
+                   ->subject('Your OTP Code from ATS');
+              });
+            } catch (\Exception $e) {
+                Log::error('Failed to send OTP or cache OTP', [
+                    'email' => $user->email,
+                    'exception' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return response()->json(['error' => 'Failed to send OTP. Please try again.'], 500);
+            }
 
             return response()->json([
                 'user'  => $user,
