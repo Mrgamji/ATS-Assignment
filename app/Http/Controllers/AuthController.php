@@ -6,53 +6,79 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Validator;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\{DB, Hash};
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class AuthController extends Controller
 {
+    
+    
     public function verifyOtp(Request $request)
     {
+        // 1) Validate inputs
         $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'otp' => 'required|string'
+            'email' => ['required', 'email'],
+            'otp'   => ['required', 'string', 'size:6'], // adjust size/format as needed
         ]);
-
         if ($validator->fails()) {
             return response()->json(['error' => $validator->errors()], 422);
         }
-
-        $email = $request->input('email');
-        $otp = $request->input('otp');
-
-        // OTP is stored as: Cache::put('otp_' . $user->email, $otp, now()->addMinutes(10));
-        $cacheKey = 'otp_' . $email;
-        $cachedOtp = Cache::get($cacheKey);
-
+    
+        // Normalize
+        $email = mb_strtolower($request->input('email'));
+        $otp   = (string) $request->input('otp');
+    
+        // 2) Basic rate-limit (IP + email)
+        $throttleKey = sprintf('otp_verify:%s|%s', $email, $request->ip());
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return response()->json(['error' => "Too many attempts. Try again in {$seconds} seconds."], 429);
+        }
+        RateLimiter::hit($throttleKey, 60); // decay: 60s per hit window
+    
+        // 3) Atomically fetch & remove OTP (single-use)
+        $cacheKey  = 'otp_' . $email;
+        $cachedOtp = Cache::pull($cacheKey); // pull = get + forget
         if (!$cachedOtp) {
-            return response()->json(['error' => 'OTP expired or not found.'], 400);
+            return response()->json(['error' => 'Invalid or expired OTP.'], 400);
         }
-
-        if ((string) $cachedOtp !== (string) $otp) {
-            return response()->json(['error' => 'Invalid OTP.'], 400);
+    
+        // 4) Timing-safe compare
+        if (!hash_equals((string) $cachedOtp, $otp)) {
+            return response()->json(['error' => 'Invalid or expired OTP.'], 400);
         }
-
-        // Mark user as verified (set email_verified_at)
-        $user = User::where('email', $email)->first();
-        if ($user) {
-            $user->email_verified_at = now();
-            $user->save();
+    
+        // 5) Find user (generic errors to avoid enumeration)
+        $user = \App\Models\User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json(['error' => 'Invalid or expired OTP.'], 400);
         }
+    
+        // 6) Mark verified (idempotent)
+        if (is_null($user->email_verified_at)) {
+            $user->forceFill(['email_verified_at' => now()])->save();
+        }
+    
+        Auth::login($user, true);                 // or false if you don’t want “remember me”
+         // Generate JWT token
+        $token = JWTAuth::fromUser($user);
 
-        // Remove OTP from cache after successful verification
-        Cache::forget($cacheKey);
-
-        return response()->json(['message' => 'OTP verified successfully.'], 200);
+    return response()->json([
+        'message'     => 'OTP verified successfully',
+        'token'       => $token,
+        'token_type'  => 'bearer',
+        'user'        => $user,
+    ]);       // prevent session fixation
+    
     }
-
+    
     public function resendOtp(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -285,6 +311,7 @@ class AuthController extends Controller
                 $request->only('email')
             );
 
+
             if ($status === Password::RESET_LINK_SENT) {
                 return response()->json(['message' => 'Reset link sent to your email.']);
             } else {
@@ -293,7 +320,7 @@ class AuthController extends Controller
                     'email' => $request->input('email'),
                     'status' => $status
                 ]);
-                return response()->json(['error' => 'Unable to send reset link.'], 500);
+                return response()->json(['error' => 'Unable to send reset link.'.$status], 500);
             }
         } catch (\Exception $e) {
             // Log the exception details
@@ -323,6 +350,85 @@ class AuthController extends Controller
         return response()->json(['message' => 'Email verified successfully.']);
     }
 
+    public function updatePassword(Request $request)
+    {
+        // 1) Validate input
+        $v = Validator::make($request->all(), [
+            'email'    => 'required|email:rfc,dns',
+            'password' => 'required|string|min:8|confirmed',
+            'token'    => 'required|string',
+        ]);
+        if ($v->fails()) {
+            return response()->json(['error' => $v->errors()], 422);
+        }
+    
+        // 2) Normalize and throttle
+        $email = Str::lower(trim($request->input('email')));
+        $tokenPlain = (string) $request->input('token');
+        $throttleKey = 'pwd-reset:' . sha1($email . '|' . $request->ip());
+    
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            return response()->json([
+                'error' => 'Too many attempts. Try again later.',
+                'retry_after_seconds' => RateLimiter::availableIn($throttleKey),
+            ], 429);
+        }
+    
+        // 3) Find user
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            RateLimiter::hit($throttleKey, 60);
+            return response()->json(['error' => 'Invalid email or token.'], 400);
+        }
+    
+        // 4) Read reset record (detect table correctly)
+        $record = DB::table('password_reset_tokens')->where('email', $email)->first();
+        $table  = $record ? 'password_reset_tokens' : null;
+    
+        if (!$record) {
+            $record = DB::table('password_resets')->where('email', $email)->first();
+            $table  = $record ? 'password_resets' : null;
+        }
+    
+        if (!$record) {
+            RateLimiter::hit($throttleKey, 60);
+            return response()->json(['error' => 'Invalid or expired reset token.'], 400);
+        }
+    
+        // 5) Expiry check (defaults to 60 minutes unless you changed config)
+        $expires = (int) config('auth.passwords.users.expire', 60);
+        if (Carbon::parse($record->created_at)->addMinutes($expires)->isPast()) {
+            DB::table($table)->where('email', $email)->delete();
+            RateLimiter::hit($throttleKey, 60);
+            return response()->json(['error' => 'Invalid or expired reset token.'], 400);
+        }
+    
+        // 6) Validate token properly
+        $tokenIsValid = $table === 'password_reset_tokens'
+            ? Hash::check($tokenPlain, $record->token)                       // hashed (newer)
+            : (Hash::check($tokenPlain, $record->token)                      // some projects hash even in old table
+               || hash_equals((string) $record->token, $tokenPlain));        // legacy plaintext
+    
+        if (!$tokenIsValid) {
+            RateLimiter::hit($throttleKey, 60);
+            return response()->json(['error' => 'Invalid or expired reset token.'], 400);
+        }
+    
+        // 7) Atomic update + cleanup
+        DB::transaction(function () use ($user, $request, $email, $table) {
+            $user->forceFill([
+                'password'       => Hash::make($request->input('password')),
+                'remember_token' => Str::random(60),
+            ])->save();
+    
+            // remove all reset rows for this email
+            DB::table($table)->where('email', $email)->delete();
+    
+        });
+    
+        RateLimiter::clear($throttleKey);
+        return redirect()->route('password.successful');
+    }
     public function logout(Request $request)
     {
         $user = Auth::user();
