@@ -21,8 +21,8 @@ public function boot()
 {
     // Always force https + production domain for emails
     ResetPassword::createUrlUsing(function ($notifiable, string $token) {
-        $base = 'https://atsdb.up.railway.app';
-        return $base.'/password/reset/'.$token.'?email='.urlencode($notifiable->getEmailForPasswordReset());
+        $base ='https://atsdb.up.railway.app';
+        return $base.'/api/password/reset/'.$token.'?email='.urlencode($notifiable->getEmailForPasswordReset());
     });
 }
 
