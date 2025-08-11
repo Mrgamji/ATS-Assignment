@@ -17,6 +17,7 @@ Route::post('forgot-password', [App\Http\Controllers\AuthController::class, 'for
 Route::post('verify-email', [App\Http\Controllers\AuthController::class, 'verifyEmail'])->name('verify-email');
 Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->middleware('auth:api')->name('logout');
 Route::post('verify-otp', [App\Http\Controllers\AuthController::class, 'verifyOtp'])->name('verify-otp');
+Route::post('resend-otp', [App\Http\Controllers\AuthController::class, 'resendOtp'])->name('resend-otp');
 
 Route::middleware('auth:api')->post('updateProfile', [App\Http\Controllers\AuthController::class, 'updateProfile'])->name('profile.update');
 Route::get('/password/reset/{token}', function ($token) {

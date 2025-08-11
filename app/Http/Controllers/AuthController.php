@@ -53,6 +53,46 @@ class AuthController extends Controller
         return response()->json(['message' => 'OTP verified successfully.'], 200);
     }
 
+    public function resendOtp(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => $validator->errors()], 422);
+        }
+
+        $email = $request->input('email');
+        $user = User::where('email', $email)->first();
+
+         // Generate a 6-digit OTP
+         $otp = rand(100000, 999999);
+
+         // Store OTP in cache for 10 minutes (or you can use DB if preferred)
+         try {
+             Cache::put('otp_' . $email, (string) $otp, now()->addMinutes(10));
+
+             // Send OTP to user's email
+         Mail::send('emails.otp', ['otp' => $otp], function ($message) use ($user) 
+              {
+                    $message->to($user->email)
+                ->subject('Your OTP Code from ATS');
+           });
+         } catch (\Exception $e) {
+             Log::error('Failed to send OTP or cache OTP', [
+                 'email' => $user->email,
+                 'exception' => $e->getMessage(),
+                 'trace' => $e->getTraceAsString()
+             ]);
+             return response()->json(['error' => 'Failed to send OTP. Please try again.'], 500);
+         }
+
+         return response()->json([
+             'message' => 'OTP Resent Successfully.'
+         ], 201);
+    }
+
 
     public function updateProfile(Request $request)
     {
