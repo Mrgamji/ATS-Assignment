@@ -26,7 +26,7 @@ Route::get('password/successful', function () {
 
 Route::middleware('auth:api')->post('updateProfile', [App\Http\Controllers\AuthController::class, 'updateProfile'])->name('profile.update');
 Route::get('/password/reset/{token}', function ($token) {
-    return view('auth.reset', ['token' => $token]);
+    return view('welcome', ['token' => $token]);
 })->name('password.reset');
 
 Route::post('seeduser', function () {
