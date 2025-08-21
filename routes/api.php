@@ -19,12 +19,10 @@ Route::post('logout', [App\Http\Controllers\AuthController::class, 'logout'])->m
 Route::post('verify-otp', [App\Http\Controllers\AuthController::class, 'verifyOtp'])->name('verify-otp');
 Route::post('resend-otp', [App\Http\Controllers\AuthController::class, 'resendOtp'])->name('resend-otp');
 Route::post('password/update', [App\Http\Controllers\AuthController::class, 'updatePassword'])->name('password.update');
-Route::get('password/successful', function () {
-    return view('auth.passwordsuccessful');
-})->name('password.successful');
 
 
 Route::middleware('auth:api')->post('updateProfile', [App\Http\Controllers\AuthController::class, 'updateProfile'])->name('profile.update');
+
 Route::get('/password/reset/{token}', function ($token) {
     return view('auth.reset', ['token' => $token]);
 })->name('password.reset');

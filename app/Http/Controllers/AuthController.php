@@ -427,8 +427,13 @@ class AuthController extends Controller
         });
     
         RateLimiter::clear($throttleKey);
-        return redirect()->route('password.successful');
+
+        return response()->json([
+            'message' => 'Password Updated Successfully.'
+        ], 201);
+        
     }
+    
     public function logout(Request $request)
     {
         $user = Auth::user();
